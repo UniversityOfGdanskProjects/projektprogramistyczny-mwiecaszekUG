@@ -135,6 +135,8 @@ router.delete('/:id', async (req, res) => {
 
 // dodanie/usuniecie (relacji) favourite
 // pobranie favourites
+// post do logowania
+// pobranie komentarzy uzytkownika
 
 // username
 // password

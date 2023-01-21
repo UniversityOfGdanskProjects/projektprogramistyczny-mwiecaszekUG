@@ -14,11 +14,15 @@ router.get('/', async(req, res) => {
         onNext: async record => {
             const result = await record.get('n').properties
             const id = await record.get('n').elementId
-            const scores = result.comments.map(x => {
-                x.score
-            })
-            const score = scores.reduce((a, b) => a + b , 0) / scores.length
-            games.push({"id": id, ...result, "score": score})
+            let score = 0
+            if (result.scores) {
+                score = result.scores.reduce((a, b) => parseInt(a) + parseInt(b) , 0) / result.scores.length
+
+            } else {
+                score = 0
+            }
+            delete result.scores
+            games.push({"id": id, ...result, "score": String(score)})
         },
         onCompleted: () => {
             session.close()
@@ -40,12 +44,15 @@ router.get('/:id', async (req, res) => {
         onNext: async record => {
             const game = await record.get('n').properties
             const id = await record.get('n').elementId
-            
-            const scores = game.comments.map(x => {
-                x.score
-            })
-            const score = scores.reduce((a, b) => a + b , 0) / scores.length
-            result = {"id": id, ...game, "score": score}
+            let score = 0
+            if (game.scores) {
+                score = game.scores.reduce((a, b) => parseInt(a) + parseInt(b) , 0) / game.scores.length
+
+            } else {
+                score = 0
+            }
+            delete game.scores
+            result = {"id": id, ...game, "score": String(score)}
         },
         onCompleted: () => {
           session.close();      
@@ -68,7 +75,7 @@ router.post('/create', async (req, res) => {
             age_restricted: "${game.age_restricted}",
             description: "${game.description}",
             release_year: "${game.release_year}",
-            comments: [] })`)
+            scores: [] })`)
       .subscribe({
         onCompleted: () => {
           session.close();      
@@ -114,8 +121,8 @@ router.delete('/:id', async (req, res) => {
     return res.send("Deleted");
 })
 
-// zwracanie score jako avg
-//
+
+// sortowanie/filtrowanie przy get
 
 // game_id
 // title
