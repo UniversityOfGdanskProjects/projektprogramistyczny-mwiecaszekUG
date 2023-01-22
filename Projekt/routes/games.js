@@ -112,6 +112,4 @@ router.delete('/:id', async (req, res) => {
     return res.send("Deleted");
 })
 
-// sortowanie/filtrowanie przy get
-
 module.exports = router;

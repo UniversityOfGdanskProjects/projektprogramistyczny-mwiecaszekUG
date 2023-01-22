@@ -132,8 +132,89 @@ router.delete('/:id', async (req, res) => {
     return res.send("Deleted");
 })
 
-// dodanie/usuniecie (relacji) favourite
-// pobranie favourites
-// post do logowania
+router.post('/login', async (req, res) => {
+    const session = driver.session();
+    const users = []
+    await session
+    .run(`MATCH (n:User) RETURN n`)
+    .subscribe({
+        onNext: async record => {
+            const result = await record.get('n').properties
+            const id = await record.get('n').elementId
+            users.push({"id": id, ...result})
+        },
+        onCompleted: () => {
+            session.close()
+            let found_user = false
+            users.forEach( u => {
+                if (u.username == req.body.username & u.password == req.body.password) {
+                    found_user = true
+                }
+            })
+            if (found_user) return res.send("Zalogowano")
+            return res.send("Niepoprawne dane logowania")
+        },
+        onError: error => {
+            console.log(error);
+            res.send("Sth went wrong")
+        }
+    })
+})
+
+router.post('/:id/favourite/:game', async (req, res) => {
+    const session = driver.session();
+    await session
+      .run(`MATCH (u:User), (g:Game) WHERE id(u)=${req.params.id} AND id(g)=${req.params.game}
+            CREATE (u)-[:LIKES]->(g)`)
+      .subscribe({
+        onCompleted: () => {
+          session.close();      
+          res.send("success")
+        },
+        onError: error => {
+          console.log(error)
+          res.send(error)
+        },
+      })  
+})
+
+router.delete('/:id/favourite/:game', async (req, res) => {
+    const session = driver.session();
+    await session
+      .run(`MATCH (u:User)-[r:LIKES]->(g:Game) WHERE id(u)=${req.params.id} AND id(g)=${req.params.game}
+            DETACH DELETE r`)
+      .subscribe({
+        onCompleted: () => {
+          session.close();      
+          res.send("success")
+        },
+        onError: error => {
+          console.log(error)
+          res.send(error)
+        },
+      })  
+})
+
+router.get('/:id/favourite/', async (req, res) => {
+    const session = driver.session();
+    const games = []
+    await session
+      .run(`MATCH (u:User)-[r:LIKES]->(g:Game) WHERE id(u)=${req.params.id}
+            RETURN g`)
+      .subscribe({
+        onNext: async record => {
+            const game = await record.get('g').properties
+            const id = await record.get('g').elementId
+            games.push({"id": id, ...game})
+        },
+        onCompleted: () => {
+          session.close();      
+          res.send({"games": games});
+        },
+        onError: error => {
+          console.log(error)
+        },
+      })  
+})
 
 module.exports = router;
