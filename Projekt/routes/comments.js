@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router({mergeParams: true});
 const driver = require('../config/neo4jDriver');
-const session = driver.session();
 
 
 router.get('/', async(req, res) => {
@@ -100,8 +99,7 @@ router.get('/:id', async (req, res) => {
             AND id(g) = ${req.params.game_id}
             CREATE (u)-[:WROTE]->(n:Comment {text: "${comment.text}",
             score: "${comment.score}"})
-            CREATE (n)-[:RATES]->(g)
-            SET g.scores = g.scores + ${String(comment.score)}`)
+            CREATE (n)-[:RATES]->(g)`)
       .subscribe({
         onCompleted: () => {
           session.close();      
@@ -114,11 +112,42 @@ router.get('/:id', async (req, res) => {
       })  
 })
 
-// comment_id
-// user_id (Written_by)
-// text
-// score
-// game_id (Rates)
 
+router.put('/:id', async (req, res) => {
+    const session = driver.session();
+    const comment = req.body
+
+    await session
+      .run(`MATCH (n:Comment) where id(n) = ${req.params.id} 
+            SET n.text = "${comment.text}"
+            SET n.score = "${comment.score}"`)
+      .subscribe({
+        onCompleted: () => {
+          session.close();      
+          res.send("success");
+        },
+        onError: error => {
+          console.log(error)
+        },
+      })  
+
+})
+
+router.delete('/:id', async (req, res) => {
+    const session = driver.session();
+    await session
+      .run(`MATCH (n:Comment) where id(n) = ${req.params.id} 
+            DETACH DELETE n`)
+      .subscribe({
+        onCompleted: () => {
+          session.close();      
+          res.send("success");
+        },
+        onError: error => {
+          console.log(error)
+        },
+      })  
+
+})
 
 module.exports = router;

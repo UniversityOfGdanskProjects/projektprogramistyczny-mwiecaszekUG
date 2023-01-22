@@ -3,7 +3,6 @@
 const express = require('express');
 const router = express.Router({mergeParams: true});
 const driver = require('../config/neo4jDriver');
-const session = driver.session();
 
 router.get('/', async(req, res) => {
     const session = driver.session();
@@ -14,15 +13,7 @@ router.get('/', async(req, res) => {
         onNext: async record => {
             const result = await record.get('n').properties
             const id = await record.get('n').elementId
-            let score = 0
-            if (result.scores) {
-                score = result.scores.reduce((a, b) => parseInt(a) + parseInt(b) , 0) / result.scores.length
-
-            } else {
-                score = 0
-            }
-            delete result.scores
-            games.push({"id": id, ...result, "score": String(score)})
+            games.push({"id": id, ...result,})
         },
         onCompleted: () => {
             session.close()
@@ -38,24 +29,24 @@ router.get('/', async(req, res) => {
 router.get('/:id', async (req, res) => {
     const session = driver.session();
     let result = "Not found"
+    let score = []
     await session
-      .run(`MATCH (n:Game) where id(n) = ${req.params.id} RETURN n`)
+      .run(`MATCH (n:Game) where id(n) = ${req.params.id}
+      OPTIONAL MATCH (c:Comment)-[:RATES]->(n)
+      RETURN n, c`)
       .subscribe({
         onNext: async record => {
             const game = await record.get('n').properties
             const id = await record.get('n').elementId
-            let score = 0
-            if (game.scores) {
-                score = game.scores.reduce((a, b) => parseInt(a) + parseInt(b) , 0) / game.scores.length
-
-            } else {
-                score = 0
+            if (record.get('c')) {
+                score.push(record.get('c').properties.score)
             }
-            delete game.scores
-            result = {"id": id, ...game, "score": String(score)}
+            result = {"id": id, ...game}
         },
         onCompleted: () => {
           session.close();      
+          score = score.reduce((a, b) => parseInt(a) + parseInt(b) , 0) / score.length
+          result = {...result, "score": score}
           res.send({"game": result});
         },
         onError: error => {
@@ -74,8 +65,7 @@ router.post('/create', async (req, res) => {
             category: "${game.category}",
             age_restricted: "${game.age_restricted}",
             description: "${game.description}",
-            release_year: "${game.release_year}",
-            scores: [] })`)
+            release_year: "${game.release_year}"`)
       .subscribe({
         onCompleted: () => {
           session.close();      
@@ -99,7 +89,8 @@ router.put('/:id', async (req, res) => {
         SET n.category = "${game.category}"
         SET n.age_restricted = "${game.age_restricted}"
         SET n.description = "${game.description}"
-        SET n.release_year = "${game.release_year}"`)
+        SET n.release_year = "${game.release_year}"
+        SET n.price = "${game.price}"`)
       .subscribe({
         onCompleted: () => {
           session.close();      
@@ -121,18 +112,6 @@ router.delete('/:id', async (req, res) => {
     return res.send("Deleted");
 })
 
-
 // sortowanie/filtrowanie przy get
-
-// game_id
-// title
-// image_url
-// developer
-// category
-// age_restricted
-// description
-// release_year
-// comments (z powiązanych comments)
-
 
 module.exports = router;
