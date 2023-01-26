@@ -93,6 +93,9 @@ router.get('/:id', async (req, res) => {
   router.post('/for/:game_id/by/:user_id', async (req, res) => {
     const session = driver.session();
     const comment = req.body
+    if (! comment.text || ! comment.score) {
+        return res.send("Niekompletne dane")
+    }
     await session
       .run(`MATCH (u:User), (g:Game)
             WHERE id(u) = ${req.params.user_id}
@@ -116,6 +119,10 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
     const session = driver.session();
     const comment = req.body
+
+    if (! comment.text || ! comment.score) {
+        return res.send("Niekompletne dane")
+    }
 
     await session
       .run(`MATCH (n:Comment) where id(n) = ${req.params.id} 

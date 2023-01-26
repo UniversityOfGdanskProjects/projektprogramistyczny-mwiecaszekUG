@@ -58,6 +58,9 @@ router.get('/:id', async (req, res) => {
 router.post('/create', async (req, res) => {
     const session = driver.session();
     const game = req.body
+    if (! game.title || ! game.image_url || ! game.developer || ! game.category || ! game.age_restricted || ! game.description || ! game.release_year) {
+        return res.send("Niekompletne dane")
+    }
     await session
       .run(`CREATE (n:Game {title: "${game.title}",
             image_url: "${game.image_url}",
@@ -80,6 +83,11 @@ router.post('/create', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     const game = req.body
+
+    if (! game.title || ! game.image_url || ! game.developer || ! game.category || ! game.age_restricted || ! game.description || ! game.release_year) {
+        return res.send("Niekompletne dane")
+    }
+
     const session = driver.session();
         await session
       .run(`MATCH (n:Game) WHERE id(n)=${req.params.id}

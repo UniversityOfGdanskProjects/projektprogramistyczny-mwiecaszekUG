@@ -49,6 +49,9 @@ router.get('/:id', async (req, res) => {
 router.post('/create', async (req, res) => {
     const session = driver.session();
     const user = req.body
+    if (! user.username || ! user.password || ! user.age || ! user.email || ! user.phone_number || ! user.address) {
+        return res.send("Niekompletne dane")
+    }
     await session
       .run(`CREATE (n:User {username: "${user.username}",
             password: "${user.password}",
@@ -72,6 +75,11 @@ router.put('/:id', async (req, res) => {
     const old_username = req.body.old_username
     const passowrd = req.body.old_password
     const user = req.body
+
+    if (! user.username || ! user.password || ! user.age || ! user.email || ! user.phone_number || ! user.address) {
+        return res.send("Niekompletne dane")
+    }
+
     const session = driver.session();
 
     const return_result = async () => {
